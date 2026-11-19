@@ -1,0 +1,13 @@
+{
+  "watch": ["server.js", "js/", "index.html", "styles.css"],
+  "ext": "js,html,css,json",
+  "ignore": ["node_modules/", "*.log"],
+  "delay": "300",
+  "verbose": false,
+  "colours": true,
+  "restartable": "rs",
+  "env": {
+    "NODE_ENV": "development",
+    "PORT": "3000"
+  }
+}

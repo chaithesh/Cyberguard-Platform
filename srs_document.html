@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Software Requirements Specification (SRS) - CyberGuard</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 20mm 18mm 20mm 18mm;
+    }
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b;
+      line-height: 1.55;
+      font-size: 11pt;
+      margin: 0;
+      padding: 0;
+      background: #fff;
+    }
+    .cover-page {
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 85vh;
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .cover-badge {
+      display: inline-block;
+      background: #0284c7;
+      color: #fff;
+      font-size: 10pt;
+      font-weight: 700;
+      padding: 6px 16px;
+      border-radius: 20px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 25px;
+    }
+    .cover-title {
+      font-size: 26pt;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.2;
+      margin: 0 0 15px 0;
+    }
+    .cover-subtitle {
+      font-size: 14pt;
+      color: #475569;
+      font-weight: 500;
+      margin-bottom: 50px;
+    }
+    .cover-meta {
+      margin-top: 60px;
+      border-top: 2px solid #e2e8f0;
+      padding-top: 30px;
+      display: inline-block;
+      text-align: left;
+      font-size: 11pt;
+      color: #334155;
+    }
+    .cover-meta table td {
+      padding: 6px 14px;
+    }
+    .cover-meta strong {
+      color: #0f172a;
+    }
+
+    /* Document Structure */
+    h1 {
+      font-size: 18pt;
+      color: #0f172a;
+      border-bottom: 2px solid #0284c7;
+      padding-bottom: 6px;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      page-break-after: avoid;
+    }
+    h2 {
+      font-size: 14pt;
+      color: #0369a1;
+      margin-top: 22px;
+      margin-bottom: 10px;
+      page-break-after: avoid;
+    }
+    h3 {
+      font-size: 12pt;
+      color: #1e293b;
+      margin-top: 16px;
+      margin-bottom: 8px;
+      page-break-after: avoid;
+    }
+    p, ul, ol {
+      margin-top: 0;
+      margin-bottom: 12px;
+    }
+    ul, ol {
+      padding-left: 24px;
+    }
+    li {
+      margin-bottom: 5px;
+    }
+    .page-break {
+      page-break-after: always;
+    }
+
+    /* Tables */
+    table.spec-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0 20px 0;
+      font-size: 10pt;
+    }
+    table.spec-table th, table.spec-table td {
+      border: 1px solid #cbd5e1;
+      padding: 8px 10px;
+      text-align: left;
+    }
+    table.spec-table th {
+      background: #f1f5f9;
+      color: #0f172a;
+      font-weight: 700;
+    }
+    table.spec-table tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+
+    /* Requirement Box */
+    .req-box {
+      border-left: 4px solid #0284c7;
+      background: #f0f9ff;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      border-radius: 0 6px 6px 0;
+      font-size: 10pt;
+    }
+    .req-id {
+      font-weight: 700;
+      color: #0369a1;
+      font-family: monospace;
+      margin-right: 8px;
+    }
+
+    code {
+      font-family: Consolas, 'Courier New', monospace;
+      background: #f1f5f9;
+      color: #0f172a;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 9.5pt;
+    }
+    .footer-note {
+      font-size: 9pt;
+      color: #64748b;
+      text-align: center;
+      margin-top: 30px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- COVER PAGE -->
+  <div class="cover-page">
+    <div>
+      <span class="cover-badge">IEEE Std 830-1998 Compliant</span>
+    </div>
+    <h1 class="cover-title">SOFTWARE REQUIREMENTS SPECIFICATION (SRS)</h1>
+    <div class="cover-subtitle">CyberGuard: Multi-Vector Phishing Detection &amp; SOC Threat Intelligence Platform</div>
+    
+    <div class="cover-meta">
+      <table>
+        <tr>
+          <td><strong>Project Name:</strong></td>
+          <td>CyberGuard Security Platform</td>
+        </tr>
+        <tr>
+          <td><strong>Document Version:</strong></td>
+          <td>1.0.0 (Final Release)</td>
+        </tr>
+        <tr>
+          <td><strong>Document Type:</strong></td>
+          <td>Formal Software Requirements Specification</td>
+        </tr>
+        <tr>
+          <td><strong>Architectural Style:</strong></td>
+          <td>Edge-Centric Zero-Knowledge Client Architecture</td>
+        </tr>
+        <tr>
+          <td><strong>Host Runtime:</strong></td>
+          <td>Node.js &bull; Vanilla JavaScript (ES6+ Modules)</td>
+        </tr>
+        <tr>
+          <td><strong>Target Audience:</strong></td>
+          <td>Academic Evaluators, SOC Engineers &amp; Developers</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- TABLE OF CONTENTS -->
+  <h1>Table of Contents</h1>
+  <ol style="line-height: 1.8;">
+    <li><strong>1. Introduction</strong>
+      <ul>
+        <li>1.1 Purpose of the Document</li>
+        <li>1.2 Document Conventions</li>
+        <li>1.3 Intended Audience</li>
+        <li>1.4 Project Scope</li>
+        <li>1.5 References &amp; Standards</li>
+      </ul>
+    </li>
+    <li><strong>2. Overall Description</strong>
+      <ul>
+        <li>2.1 Product Perspective</li>
+        <li>2.2 Product Functions</li>
+        <li>2.3 User Classes and Characteristics</li>
+        <li>2.4 Operating Environment</li>
+        <li>2.5 Design and Implementation Constraints</li>
+        <li>2.6 Assumptions and Dependencies</li>
+      </ul>
+    </li>
+    <li><strong>3. Specific System Features &amp; Functional Requirements</strong>
+      <ul>
+        <li>3.1 Feature 1: URL &amp; DOM Lexical Heuristic Analyzer</li>
+        <li>3.2 Feature 2: Email Authentication &amp; Psychological NLP Inspector</li>
+        <li>3.3 Feature 3: SMS SMiShing &amp; Shortcode Detection Engine</li>
+        <li>3.4 Feature 4: Telephony Vishing &amp; Reverse Caller ID Telemetry</li>
+        <li>3.5 Feature 5: Image Forensics &amp; Canvas Error Level Analysis (ELA)</li>
+        <li>3.6 Feature 6: Explainable Artificial Intelligence (XAI) &amp; Adversarial Lab</li>
+        <li>3.7 Feature 7: In-Browser YARA Rule Threat Hunting Sandbox</li>
+        <li>3.8 Feature 8: SOC Incident Reporting &amp; JSON/PDF Export Engine</li>
+        <li>3.9 Feature 9: Gamified Security Awareness Simulator</li>
+      </ul>
+    </li>
+    <li><strong>4. External Interface Requirements</strong>
+      <ul>
+        <li>4.1 User Interfaces (UI)</li>
+        <li>4.2 Hardware Interfaces</li>
+        <li>4.3 Software Interfaces</li>
+        <li>4.4 Communications Interfaces</li>
+      </ul>
+    </li>
+    <li><strong>5. Non-Functional Requirements</strong>
+      <ul>
+        <li>5.1 Performance Requirements</li>
+        <li>5.2 Safety &amp; Zero-Knowledge Privacy Requirements</li>
+        <li>5.3 Security Requirements &amp; Directory Confinement</li>
+        <li>5.4 Software Quality Attributes</li>
+      </ul>
+    </li>
+  </ol>
+
+  <div class="page-break"></div>
+
+  <!-- SECTION 1: INTRODUCTION -->
+  <h1>1. Introduction</h1>
+
+  <h2>1.1 Purpose</h2>
+  <p>
+    This Software Requirements Specification (SRS) document provides a rigorous, complete description of the functional, non-functional, interface, and behavioral requirements for the <strong>CyberGuard Cybersecurity Platform</strong>. It defines the operational criteria for multi-vector phishing detection, algorithmic threat scoring, Explainable AI (XAI) feature attributions, and Security Operations Center (SOC) incident reporting.
+  </p>
+
+  <h2>1.2 Document Conventions</h2>
+  <p>
+    This document conforms to the <strong>IEEE Std 830-1998</strong> specification format. Requirements are uniquely labeled with identifiers (e.g., <code>[FR-URL-01]</code> for Functional Requirements, <code>[NFR-PERF-01]</code> for Non-Functional Requirements). The keywords <em>SHALL</em>, <em>MUST</em>, and <em>SHOULD</em> convey mandatory and recommended design specifications respectively.
+  </p>
+
+  <h2>1.3 Intended Audience</h2>
+  <p>
+    This document is intended for project evaluators, software engineers, cybersecurity researchers, and SOC administrators who require an authoritative specification of the platform's architectural mechanics and algorithmic dependencies.
+  </p>
+
+  <h2>1.4 Project Scope</h2>
+  <p>
+    <strong>CyberGuard</strong> is an integrated, client-side, edge-computing cyber defense platform. It supersedes traditional, slow static URL blacklists by delivering real-time, zero-day threat analysis across five interaction vectors: Web URLs &amp; DOM structures, Email messages &amp; authentication headers, SMS lures (SMiShing), Voice calls (Vishing), and Digital images/QR codes (Quishing).
+  </p>
+
+  <h2>1.5 References</h2>
+  <ul>
+    <li><strong>IEEE Std 830-1998:</strong> Recommended Practice for Software Requirements Specifications.</li>
+    <li><strong>RFC 7208:</strong> Sender Policy Framework (SPF) for Authorizing Use of Domains in Email.</li>
+    <li><strong>RFC 6376:</strong> DomainKeys Identified Mail (DKIM) Signatures.</li>
+    <li><strong>RFC 7489:</strong> Domain-based Message Authentication, Reporting, and Conformance (DMARC).</li>
+    <li><strong>Shannon, C.E. (1948):</strong> A Mathematical Theory of Communication (Information Entropy).</li>
+    <li><strong>Levenshtein, V. (1966):</strong> Binary codes capable of correcting deletions, insertions, and reversals.</li>
+  </ul>
+
+  <!-- SECTION 2: OVERALL DESCRIPTION -->
+  <h1>2. Overall Description</h1>
+
+  <h2>2.1 Product Perspective</h2>
+  <p>
+    CyberGuard operates as a self-contained Single Page Application (SPA) supported by a lightweight, native Node.js HTTP server. The system adopts a <strong>Zero-Knowledge / Edge-First architecture</strong>: all computations, heuristic calculations, and data stores operate inside the client browser environment, preventing sensitive corporate emails and personal phone records from leaking to external cloud servers.
+  </p>
+
+  <h2>2.2 Product Functions</h2>
+  <ul>
+    <li>Real-time lexical domain parsing, typosquatting calculation, and Shannon entropy analysis.</li>
+    <li>Verification of cryptographic email headers (SPF, DKIM, DMARC) and Return-Path envelope validation.</li>
+    <li>Natural Language Processing (NLP) detection of psychological urgency and CEO fraud lures.</li>
+    <li>Telephony reverse caller ID lookup and STIR/SHAKEN protocol spoofing telemetry.</li>
+    <li>HTML5 Canvas Error Level Analysis (ELA) for image compression tampering and QR decoding.</li>
+    <li>SHAP-style Explainable AI (XAI) feature attribution and adversarial perturbation generation.</li>
+    <li>Browser-compiled YARA rule sandbox for custom threat hunting.</li>
+    <li>Local persistence via the Web Storage API and formal SOC report export (JSON/PDF).</li>
+  </ul>
+
+  <h2>2.3 User Classes and Characteristics</h2>
+  <table class="spec-table">
+    <thead>
+      <tr>
+        <th>User Class</th>
+        <th>Description &amp; Technical Proficiency</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>SOC Security Analyst</strong></td>
+        <td>Advanced technical proficiency; utilizes YARA rule compiler, IoC search engine, ELA heatmaps, and exports JSON SIEM telemetry.</td>
+      </tr>
+      <tr>
+        <td><strong>General End User / Employee</strong></td>
+        <td>Basic technical proficiency; scans suspicious links, checks SMS/phone lures, and completes awareness training simulations.</td>
+      </tr>
+      <tr>
+        <td><strong>Academic / System Auditor</strong></td>
+        <td>Evaluates compliance with cryptographic RFC standards, XAI transparency, and data privacy safeguards.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>2.4 Operating Environment</h2>
+  <ul>
+    <li><strong>Server Environment:</strong> Node.js runtime environment (v16.0.0 or higher) running native HTTP services.</li>
+    <li><strong>Client Environment:</strong> Any modern standards-compliant web browser supporting ECMAScript 2022+ modules and HTML5 Canvas (Google Chrome 90+, Microsoft Edge 90+, Firefox 88+, Safari 14+).</li>
+    <li><strong>Operating System:</strong> Platform-independent (Windows 10/11, macOS, Linux).</li>
+  </ul>
+
+  <h2>2.5 Design &amp; Implementation Constraints</h2>
+  <ul>
+    <li><strong>Zero External Cloud Database:</strong> To preserve user confidentiality, the application shall not transmit user payloads to external database engines (e.g., MySQL, MongoDB).</li>
+    <li><strong>Storage Constraint:</strong> Browser <code>localStorage</code> is capped at 5 MB per origin. Scan history is constrained to the 50 most recent records.</li>
+    <li><strong>Browser Sandbox:</strong> Raw TCP/UDP socket calls are constrained by browser security models; live WHOIS and telco tokens are simulated algorithmically.</li>
+  </ul>
+
+  <div class="page-break"></div>
+
+  <!-- SECTION 3: SPECIFIC FUNCTIONAL REQUIREMENTS -->
+  <h1>3. Specific System Features &amp; Functional Requirements</h1>
+
+  <h2>3.1 Feature 1: URL &amp; DOM Lexical Heuristic Analyzer</h2>
+  <div class="req-box"><span class="req-id">[FR-URL-01]</span> The system <em>SHALL</em> parse input URLs into protocol, hostname, path, and query tokens using WHATWG standards.</div>
+  <div class="req-box"><span class="req-id">[FR-URL-02]</span> The system <em>SHALL</em> calculate the Levenshtein Distance between the input domain and 28 monitored target brands, assigning a +45 threat penalty when edit distance is between 1 and 2.</div>
+  <div class="req-box"><span class="req-id">[FR-URL-03]</span> The system <em>SHALL</em> compute Shannon Entropy on the domain string, assigning an +18 threat penalty for entropy values exceeding 3.8.</div>
+  <div class="req-box"><span class="req-id">[FR-URL-04]</span> The system <em>SHALL</em> flag raw IPv4 host addresses (+35 penalty) and Punycode <code>xn--</code> homograph prefixes (+40 penalty).</div>
+  <div class="req-box"><span class="req-id">[FR-URL-05]</span> The system <em>SHALL</em> normalize cumulative scores between 0 and 100, assigning visual risk ratings: <code>SAFE</code> (0–34), <code>WARNING</code> (35–69), and <code>DANGER</code> (70–100).</div>
+
+  <h2>3.2 Feature 2: Email Authentication &amp; Psychological NLP Inspector</h2>
+  <div class="req-box"><span class="req-id">[FR-EML-01]</span> The system <em>SHALL</em> parse RFC 822 email headers and evaluate SPF, DKIM, and DMARC verification statuses.</div>
+  <div class="req-box"><span class="req-id">[FR-EML-02]</span> The system <em>SHALL</em> detect envelope spoofing by verifying alignment between the visible <code>From:</code> domain and the underlying <code>Return-Path:</code> domain.</div>
+  <div class="req-box"><span class="req-id">[FR-EML-03]</span> The system <em>SHALL</em> apply NLP regular expression heuristics to detect high-urgency keywords, wire transfer requests, and executive gift card fraud.</div>
+  <div class="req-box"><span class="req-id">[FR-EML-04]</span> The system <em>SHALL</em> identify dangerous file attachment extensions, including double extensions (e.g., <code>.pdf.exe</code>) and macro-enabled documents (<code>.docm</code>, <code>.xlsm</code>).</div>
+
+  <h2>3.3 Feature 3: SMS SMiShing Detection Module</h2>
+  <div class="req-box"><span class="req-id">[FR-SMS-01]</span> The system <em>SHALL</em> scan text messages for common smishing lures: postal re-delivery fees (USPS, FedEx, DHL), bank lockouts, and tax refund baits.</div>
+  <div class="req-box"><span class="req-id">[FR-SMS-02]</span> The system <em>SHALL</em> extract shortened URLs (e.g., <code>bit.ly</code>, <code>tinyurl.com</code>) and pipe them directly into the URL heuristic engine.</div>
+  <div class="req-box"><span class="req-id">[FR-SMS-03]</span> The system <em>SHALL</em> flag unverified international sender prefixes and spoofed alphanumeric sender IDs.</div>
+
+  <h2>3.4 Feature 4: Telephony Vishing &amp; Reverse Caller ID Engine</h2>
+  <div class="req-box"><span class="req-id">[FR-VSH-01]</span> The system <em>SHALL</em> execute reverse lookups against a built-in directory of known robocall scams (IRS fraud, tech support refund scams).</div>
+  <div class="req-box"><span class="req-id">[FR-VSH-02]</span> The system <em>SHALL</em> evaluate telephony carrier types and assign risk flags to anonymous VoIP virtual lines (Twilio, Bandwidth).</div>
+  <div class="req-box"><span class="req-id">[FR-VSH-03]</span> The system <em>SHALL</em> allow users to register, save, and update custom verified caller identities into browser <code>localStorage</code>.</div>
+
+  <h2>3.5 Feature 5: Image Forensics &amp; Canvas Error Level Analysis (ELA)</h2>
+  <div class="req-box"><span class="req-id">[FR-IMG-01]</span> The system <em>SHALL</em> extract image EXIF metadata tags to detect manipulation software (Photoshop, GIMP) and AI generation tags (Midjourney, Stable Diffusion).</div>
+  <div class="req-box"><span class="req-id">[FR-IMG-02]</span> The system <em>SHALL</em> render an Error Level Analysis (ELA) compression variance heatmap on an HTML5 <code>&lt;canvas&gt;</code> to highlight spliced text and logos.</div>
+  <div class="req-box"><span class="req-id">[FR-IMG-03]</span> The system <em>SHALL</em> decode QR code matrix payloads (Quishing) and evaluate destination link safety prior to redirection.</div>
+
+  <h2>3.6 Feature 6: Explainable Artificial Intelligence (XAI) &amp; Adversarial Lab</h2>
+  <div class="req-box"><span class="req-id">[FR-XAI-01]</span> The system <em>SHALL</em> compute class probabilities: Legitimate %, Suspicious %, and Phishing %.</div>
+  <div class="req-box"><span class="req-id">[FR-XAI-02]</span> The system <em>SHALL</em> compute SHAP-style positive and negative feature attributions explaining the numerical impact of each detected risk factor.</div>
+  <div class="req-box"><span class="req-id">[FR-XAI-03]</span> The system <em>SHALL</em> generate adversarial URL mutations (homoglyphs, hex encoding, subdomain padding) to benchmark model resilience.</div>
+
+  <h2>3.7 Feature 7: In-Browser YARA Rule Threat Hunting Sandbox</h2>
+  <div class="req-box"><span class="req-id">[FR-YAR-01]</span> The system <em>SHALL</em> compile YARA-style syntax (<code>rule</code>, <code>meta</code>, <code>strings</code>, <code>condition</code>) directly inside the browser using regular expression parsing.</div>
+  <div class="req-box"><span class="req-id">[FR-YAR-02]</span> The system <em>SHALL</em> evaluate compiled signatures against raw string payloads and display matched variables and severity indicators.</div>
+  <div class="req-box"><span class="req-id">[FR-YAR-03]</span> The system <em>SHALL</em> provide a searchable Indicators of Compromise (IoC) table for known malicious file hashes, C2 IP addresses, and phishing domains.</div>
+
+  <h2>3.8 Feature 8: SOC Incident Reporting &amp; JSON/PDF Export</h2>
+  <div class="req-box"><span class="req-id">[FR-REP-01]</span> The system <em>SHALL</em> compile real-time scan findings into a standardized Security Incident Report.</div>
+  <div class="req-box"><span class="req-id">[FR-REP-02]</span> The system <em>SHALL</em> provide a one-click <code>Download JSON</code> export button to serialize telemetry for SIEM platforms (Splunk, Elastic).</div>
+  <div class="req-box"><span class="req-id">[FR-REP-03]</span> The system <em>SHALL</em> provide a formatted <code>Print / Export PDF</code> stylesheet for formal audit documentation.</div>
+
+  <div class="page-break"></div>
+
+  <!-- SECTION 4: EXTERNAL INTERFACE REQUIREMENTS -->
+  <h1>4. External Interface Requirements</h1>
+
+  <h2>4.1 User Interfaces (UI)</h2>
+  <ul>
+    <li><strong>Design Standard:</strong> Responsive, dark-themed Cyberpunk / SOC aesthetic utilizing CSS Grid and Flexbox layouts.</li>
+    <li><strong>Visual Analytics:</strong> Interactive Chart.js donut and bar charts for live risk distribution visualization.</li>
+    <li><strong>Iconography:</strong> Vector-based Lucide Icons for high-contrast accessibility.</li>
+    <li><strong>Navigation:</strong> Tab-based single-page routing without full page refreshes.</li>
+  </ul>
+
+  <h2>4.2 Hardware Interfaces</h2>
+  <ul>
+    <li>Standard personal computer or workstation running display resolutions of 1280x720 or higher.</li>
+    <li>Hardware acceleration for HTML5 Canvas 2D image pixel rendering.</li>
+  </ul>
+
+  <h2>4.3 Software Interfaces</h2>
+  <table class="spec-table">
+    <thead>
+      <tr>
+        <th>Component</th>
+        <th>Interface / Protocol</th>
+        <th>Purpose</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Node.js Server</strong></td>
+        <td><code>http</code>, <code>fs</code>, <code>path</code></td>
+        <td>Serves static web assets and normalizes file system paths.</td>
+      </tr>
+      <tr>
+        <td><strong>Web Storage API</strong></td>
+        <td><code>window.localStorage</code></td>
+        <td>Manages persistent scan records and custom caller identities.</td>
+      </tr>
+      <tr>
+        <td><strong>Canvas 2D API</strong></td>
+        <td><code>HTMLCanvasElement.getContext('2d')</code></td>
+        <td>Performs pixel manipulation for Error Level Analysis heatmaps.</td>
+      </tr>
+      <tr>
+        <td><strong>Chart.js Engine</strong></td>
+        <td>JavaScript Chart API</td>
+        <td>Renders dynamic threat distribution charts.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>4.4 Communications Interfaces</h2>
+  <ul>
+    <li><strong>Protocol:</strong> Local HTTP communication bound to <code>http://localhost:3000</code>.</li>
+    <li><strong>Data Format:</strong> Standard UTF-8 encoded JSON for serialized data storage and SIEM telemetry exchange.</li>
+  </ul>
+
+  <!-- SECTION 5: NON-FUNCTIONAL REQUIREMENTS -->
+  <h1>5. Non-Functional Requirements</h1>
+
+  <h2>5.1 Performance Requirements</h2>
+  <div class="req-box"><span class="req-id">[NFR-PERF-01]</span> The system <em>SHALL</em> complete lexical URL parsing and Levenshtein distance calculations in less than <strong>50 milliseconds</strong>.</div>
+  <div class="req-box"><span class="req-id">[NFR-PERF-02]</span> The HTML5 Canvas Error Level Analysis <em>SHALL</em> render visual heatmaps within <strong>500 milliseconds</strong> for images up to 4 MB.</div>
+  <div class="req-box"><span class="req-id">[NFR-PERF-03]</span> The application <em>SHALL</em> achieve initial cold-load boot times of under <strong>1.5 seconds</strong> on standard consumer hardware.</div>
+
+  <h2>5.2 Safety &amp; Zero-Knowledge Privacy Requirements</h2>
+  <div class="req-box"><span class="req-id">[NFR-SEC-01]</span> The system <em>SHALL</em> execute all detection algorithms strictly within the local client sandbox. User emails, phone logs, and URLs <em>SHALL NOT</em> be transmitted to any external third-party servers.</div>
+  <div class="req-box"><span class="req-id">[NFR-SEC-02]</span> The local server <em>SHALL</em> enforce path sanitization using <code>path.normalize()</code> to block path traversal directory exploits (<code>../</code>).</div>
+
+  <h2>5.3 Software Quality Attributes</h2>
+  <ul>
+    <li><strong>Portability:</strong> Runs seamlessly across Windows, macOS, and Linux without native binary dependencies.</li>
+    <li><strong>Maintainability:</strong> Clean decoupling between UI presentation components (<code>js/components/</code>) and core algorithmic engines (<code>js/engine/</code>).</li>
+    <li><strong>Usability:</strong> Provides self-explanatory risk scores and transparent Explainable AI cards suitable for both technical analysts and laypersons.</li>
+  </ul>
+
+  <div class="footer-note">
+    CyberGuard Software Requirements Specification (SRS) &bull; Generated for Academic Review &bull; IEEE Std 830-1998 Format
+  </div>
+
+</body>
+</html>
+

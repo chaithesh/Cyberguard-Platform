@@ -1,0 +1,21 @@
+{
+  "name": "cyberguard-platform",
+  "version": "1.0.0",
+  "description": "CyberGuard Security Platform - Frontend + Backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "concurrently --kill-others-on-fail --prefix \"[{name}]\" --names \"SERVER\" --prefix-colors \"cyan\" \"nodemon --watch server.js --watch js/ --watch index.html --watch styles.css --ext js,html,css server.js\""
+  },
+  "keywords": [
+    "cyberguard",
+    "security",
+    "phishing-detection"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.0.0",
+    "nodemon": "^3.0.0"
+  }
+}
