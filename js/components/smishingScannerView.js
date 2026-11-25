@@ -1,20 +1,24 @@
 /**
  * SMS / SMiShing Detector View Component
  * Clean, simplified SMS fraud & delivery scam scanner with visual phone preview.
+ * Upgraded with: Separate Country Code selector and Phone Number input.
  */
 
 import { analyzeSmishing } from '../engine/smishingAnalyzer.js';
 
 const SAMPLE_SMS = {
   usps: {
-    phone: '+1 (833) 492-0199',
+    code: '+1',
+    phone: '(833) 492-0199',
     text: '[USPS Alert]: Your package delivery has been placed on hold due to incomplete address details. Update immediately at: http://usps-redelivery-tracking.xyz/confirm'
   },
   bank: {
-    phone: '+44 7700 900077',
+    code: '+44',
+    phone: '7700 900077',
     text: 'CHASE BANK ALERT: An unauthorized login attempt of $850 was made on your account. If this was not you, verify now: http://paypa1-security-verify.xyz/login.php'
   },
   legit: {
+    code: 'NONE',
     phone: '22395',
     text: 'Your 2-Factor Security Code is 849204. Valid for 10 minutes. Do not share this code with anyone.'
   }
@@ -52,7 +56,22 @@ export function renderSmishingScannerView(container, onScanComplete) {
           <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px;">
             SENDER PHONE NUMBER OR SHORTCODE
           </label>
-          <input type="text" id="smsPhoneInput" class="clean-input" value="+1 (833) 492-0199">
+          <div style="display: flex; gap: 8px;">
+            <select id="smsCountryCodeSelect" class="clean-input" style="width: 140px; cursor: pointer; flex-shrink: 0;">
+              <option value="+1" selected>🇺🇸 +1 (US/CA)</option>
+              <option value="+91">🇮🇳 +91 (IN)</option>
+              <option value="+44">🇬🇧 +44 (UK)</option>
+              <option value="+61">🇦🇺 +61 (AU)</option>
+              <option value="+49">🇩🇪 +49 (DE)</option>
+              <option value="+33">🇫🇷 +33 (FR)</option>
+              <option value="+971">🇦🇪 +971 (UAE)</option>
+              <option value="+65">🇸🇬 +65 (SG)</option>
+              <option value="CUSTOM">➕ Other (+XX)</option>
+              <option value="NONE">📟 Shortcode / None</option>
+            </select>
+            <input type="text" id="smsCustomCodeInput" class="clean-input" style="width: 75px; display: none; flex-shrink: 0;" placeholder="+XX">
+            <input type="text" id="smsPhoneInput" class="clean-input" style="flex: 1;" placeholder="Phone number (e.g. 7338218699)" value="(833) 492-0199">
+          </div>
         </div>
 
         <div style="margin-bottom: 16px;">
@@ -92,6 +111,8 @@ export function renderSmishingScannerView(container, onScanComplete) {
 
   if (window.lucide) window.lucide.createIcons();
 
+  const countryCodeSelect = container.querySelector('#smsCountryCodeSelect');
+  const customCodeInput = container.querySelector('#smsCustomCodeInput');
   const phoneInput = container.querySelector('#smsPhoneInput');
   const bodyInput = container.querySelector('#smsBodyInput');
   const inspectBtn = container.querySelector('#inspectSmsBtn');
@@ -99,6 +120,45 @@ export function renderSmishingScannerView(container, onScanComplete) {
   const phoneSenderDisplay = container.querySelector('#phoneSenderDisplay');
   const phoneMessageBubble = container.querySelector('#phoneMessageBubble');
   const phoneRiskAlert = container.querySelector('#phoneRiskAlert');
+
+  // Handle Country Code dropdown change
+  countryCodeSelect.addEventListener('change', () => {
+    if (countryCodeSelect.value === 'CUSTOM') {
+      customCodeInput.style.display = 'block';
+      customCodeInput.focus();
+    } else {
+      customCodeInput.style.display = 'none';
+    }
+    if (countryCodeSelect.value === 'NONE') {
+      phoneInput.placeholder = 'Shortcode or Alpha ID (e.g. 22395)';
+    } else {
+      phoneInput.placeholder = 'Phone number (e.g. 7338218699)';
+    }
+  });
+
+  function getFullPhoneNumber() {
+    const code = countryCodeSelect.value;
+    const custom = customCodeInput.value.trim();
+    const rawNumber = phoneInput.value.trim();
+
+    if (!rawNumber) return '';
+
+    // If user typed + inside number box already, respect it directly
+    if (rawNumber.startsWith('+')) {
+      return rawNumber;
+    }
+
+    if (code === 'NONE') {
+      return rawNumber;
+    }
+
+    if (code === 'CUSTOM') {
+      const prefix = custom.startsWith('+') ? custom : (custom ? `+${custom}` : '');
+      return prefix ? `${prefix} ${rawNumber}` : rawNumber;
+    }
+
+    return `${code} ${rawNumber}`;
+  }
 
   loadSample('usps');
 
@@ -111,6 +171,8 @@ export function renderSmishingScannerView(container, onScanComplete) {
   function loadSample(type) {
     const s = SAMPLE_SMS[type];
     if (s) {
+      countryCodeSelect.value = s.code;
+      customCodeInput.style.display = 'none';
       phoneInput.value = s.phone;
       bodyInput.value = s.text;
       runSmsAnalysis();
@@ -118,14 +180,20 @@ export function renderSmishingScannerView(container, onScanComplete) {
   }
 
   function runSmsAnalysis() {
-    const phone = phoneInput.value;
+    const fullPhone = getFullPhoneNumber();
     const body = bodyInput.value;
 
-    phoneSenderDisplay.textContent = phone || 'Unknown';
+    phoneSenderDisplay.textContent = fullPhone || 'Unknown';
     phoneMessageBubble.textContent = body;
 
-    const res = analyzeSmishing(phone, body);
-    if (onScanComplete) onScanComplete(res);
+    const res = analyzeSmishing(fullPhone, body);
+    if (onScanComplete) {
+      onScanComplete({
+        ...res,
+        category: 'SMS',
+        target: fullPhone ? `${fullPhone} SMS` : 'SMS Text'
+      });
+    }
 
     const riskClass = res.riskLevel.toLowerCase();
 

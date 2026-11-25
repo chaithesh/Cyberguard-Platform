@@ -4,6 +4,7 @@
  */
 
 import { renderDashboardView } from './components/dashboardView.js';
+import { renderUrlScannerView } from './components/urlScannerView.js';
 import { renderEmailScannerView } from './components/emailScannerView.js';
 import { renderSmishingScannerView } from './components/smishingScannerView.js';
 import { renderVishingScannerView } from './components/vishingScannerView.js';
@@ -23,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const routes = {
     'risk-scores': (container) => renderDashboardView(container),
     'dashboard': (container) => renderDashboardView(container),
+    'url-scanner': (container) => renderUrlScannerView(container, handleScanComplete),
     'email-scanner': (container) => renderEmailScannerView(container, handleScanComplete),
     'smishing-scanner': (container) => renderSmishingScannerView(container, handleScanComplete),
     'vishing-scanner': (container) => renderVishingScannerView(container, handleScanComplete),

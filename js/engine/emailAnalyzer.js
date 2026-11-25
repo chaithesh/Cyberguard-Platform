@@ -1,23 +1,46 @@
 /**
  * CyberGuard Email Header & Content Heuristic Inspector Engine
  * Analyzes authentication headers (SPF, DKIM, DMARC), Return-Path alignment,
- * NLP psychological triggers, embedded links, and payload attachments.
+ * Display Name spoofing, executive/brand impersonation via free webmail,
+ * cryptocurrency extortion wallets, NLP psychological triggers, embedded links, and payload attachments.
  */
 
 import { analyzeUrl } from './urlAnalyzer.js';
+
+// Free public webmail provider domains commonly abused in display-name impersonation
+const FREE_WEBMAIL_DOMAINS = [
+  'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com',
+  'protonmail.com', 'mail.com', 'yandex.com', 'zoho.com', 'icloud.com', 'live.com'
+];
+
+// Executive and administrative corporate titles frequently impersonated in Business Email Compromise (BEC)
+const EXECUTIVE_KEYWORDS = [
+  'ceo', 'cfo', 'coo', 'president', 'director', 'executive', 'chief',
+  'it support', 'helpdesk', 'hr department', 'payroll team', 'security team',
+  'admin', 'administrator', 'billing department'
+];
+
+// Protected high-target brands for display name checks
+const PROTECTED_BRANDS = [
+  'paypal', 'google', 'microsoft', 'apple', 'netflix', 'amazon', 'chase',
+  'bank of america', 'wells fargo', 'dhl', 'fedex', 'usps', 'ups', 'meta', 'facebook', 'stripe'
+];
 
 // High pressure psychological lure phrases used in spear phishing
 const PSYCHOLOGICAL_TRIGGERS = [
   { phrase: 'account suspended', weight: 20, desc: 'Fake account termination scare tactic' },
   { phrase: 'unauthorized login', weight: 18, desc: 'False security breach alert' },
-  { phrase: 'wire transfer', weight: 25, desc: 'Urgent BEC / Financial lure' },
+  { phrase: 'wire transfer', weight: 25, desc: 'Urgent BEC / Financial wire lure' },
   { phrase: 'immediate verification required', weight: 22, desc: 'High urgency call-to-action' },
   { phrase: 'click here to restore', weight: 20, desc: 'Phishing link insertion' },
-  { phrase: 'gift card', weight: 25, desc: 'CEO fraud / Gift card scam lure' },
+  { phrase: 'gift card', weight: 25, desc: 'CEO fraud / Gift card purchase lure' },
   { phrase: 'invoice overdue', weight: 18, desc: 'Malicious attachment billing lure' },
   { phrase: 'payroll update', weight: 22, desc: 'Direct deposit redirect phishing' },
   { phrase: 'password expires today', weight: 20, desc: 'Urgent credential harvesting scare' },
-  { phrase: 'confirm your identity', weight: 18, desc: 'Identity theft luring' }
+  { phrase: 'confirm your identity', weight: 18, desc: 'Identity theft luring' },
+  { phrase: 'within 24 hours', weight: 15, desc: 'Artificial deadline urgency' },
+  { phrase: 'final notice', weight: 20, desc: 'Coercive final warning scare' },
+  { phrase: 'bitcoin', weight: 20, desc: 'Cryptocurrency payment lure' }
 ];
 
 // Dangerous file extensions frequently embedded in email phishing
@@ -69,16 +92,49 @@ export function analyzeEmail(emailText, headerText = '') {
   const subject = parsedHeaders['subject'] || '';
   const authResults = parsedHeaders['authentication-results'] || '';
 
-  // Extract From email address
-  const fromMatch = fromHeader.match(/<([^>]+)>/) || [null, fromHeader];
-  const fromEmail = (fromMatch[1] || '').trim();
+  // Extract Display Name and From email address (using last angle bracket for actual envelope)
+  let displayName = '';
+  let fromEmail = '';
+  const lastAngleIdx = fromHeader.lastIndexOf('<');
+  const endAngleIdx = fromHeader.lastIndexOf('>');
+  if (lastAngleIdx !== -1 && endAngleIdx > lastAngleIdx) {
+    fromEmail = fromHeader.substring(lastAngleIdx + 1, endAngleIdx).trim();
+    displayName = fromHeader.substring(0, lastAngleIdx).trim().replace(/^["']|["']$/g, '').trim();
+  } else {
+    fromEmail = fromHeader.replace(/^["']|["']$/g, '').trim();
+  }
   const fromDomain = fromEmail.split('@')[1] || '';
 
   const returnMatch = returnPath.match(/<([^>]+)>/) || [null, returnPath];
   const returnEmail = (returnMatch[1] || '').trim();
   const returnDomain = returnEmail.split('@')[1] || '';
 
-  // 1. From vs Return-Path Domain Alignment Check
+  // 1a. Display Name Spoofing: Display name contains an embedded email mismatching the real address
+  const emailInDisplayName = displayName.match(/[a-zA-Z0-9._%+-]+@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+  if (emailInDisplayName && fromDomain && emailInDisplayName[1].toLowerCase() !== fromDomain.toLowerCase()) {
+    threatScore += 45;
+    flags.push({
+      type: 'FAIL',
+      title: 'Deceptive Display Name Spoofing',
+      desc: `Display name mimics official email '${emailInDisplayName[0]}' while actual sending inbox is '${fromEmail}'. Classic mobile client deception tactic.`,
+      weight: 45
+    });
+  }
+
+  // 1b. Executive / Brand Impersonation via Free Webmail
+  const lowerDisplay = displayName.toLowerCase();
+  const claimsExecutiveOrBrand = EXECUTIVE_KEYWORDS.some(kw => lowerDisplay.includes(kw)) || PROTECTED_BRANDS.some(b => lowerDisplay.includes(b));
+  if (claimsExecutiveOrBrand && FREE_WEBMAIL_DOMAINS.includes(fromDomain.toLowerCase())) {
+    threatScore += 40;
+    flags.push({
+      type: 'FAIL',
+      title: 'Executive / Brand Impersonation via Webmail',
+      desc: `Display name claims corporate/executive identity '${displayName}' but sends from a free public webmail address (@${fromDomain}).`,
+      weight: 40
+    });
+  }
+
+  // 1c. From vs Return-Path Domain Alignment Check
   if (fromDomain && returnDomain && fromDomain.toLowerCase() !== returnDomain.toLowerCase()) {
     threatScore += 35;
     flags.push({
@@ -139,7 +195,7 @@ export function analyzeEmail(emailText, headerText = '') {
     });
   }
 
-  // 3. NLP Urgency & Psychological Lure Scanner
+  // 3a. NLP Urgency & Psychological Lure Scanner
   const combinedContent = (subject + ' ' + emailText).toLowerCase();
   const matchedTriggers = [];
 
@@ -155,6 +211,21 @@ export function analyzeEmail(emailText, headerText = '') {
       });
     }
   });
+
+  // 3b. Cryptocurrency Ransomware & Extortion Wallet Scanner
+  const btcMatches = emailText.match(/\b(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,39}\b/g) || [];
+  const ethMatches = emailText.match(/\b0x[a-fA-F0-9]{40}\b/g) || [];
+  const cryptoWallets = [...new Set([...btcMatches, ...ethMatches])];
+
+  if (cryptoWallets.length > 0) {
+    threatScore += 35;
+    flags.push({
+      type: 'FAIL',
+      title: 'Cryptocurrency Wallet Address Detected',
+      desc: `Email body contains cryptocurrency address(es): [ ${cryptoWallets.join(', ')} ]. Signature of extortion, blackmail, or ransomware demand.`,
+      weight: 35
+    });
+  }
 
   // 4. Extracted Links & Sub-Analysis
   const extractedUrls = extractUrlsFromText(emailText);
@@ -195,6 +266,7 @@ export function analyzeEmail(emailText, headerText = '') {
   else if (finalScore >= 35) riskLevel = 'WARNING';
 
   return {
+    displayName,
     fromEmail,
     fromDomain,
     returnDomain,
@@ -205,6 +277,7 @@ export function analyzeEmail(emailText, headerText = '') {
     riskLevel,
     flags,
     matchedTriggers,
+    cryptoWallets,
     links: analyzedLinks,
     suspiciousFiles: [...new Set(suspiciousFiles)]
   };

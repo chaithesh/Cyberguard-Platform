@@ -1,28 +1,33 @@
 /**
  * Fraud Phone Call (Vishing) & Reverse Caller ID Scanner View Component
  * Clean, simple caller verification & scam detector.
+ * Upgraded with: Separate Country Code selector and Phone Number input.
  */
 
 import { analyzeVishingCall, lookupCallerIdentity, saveCustomCallerIdentity } from '../engine/vishingAnalyzer.js';
 
 const SAMPLE_CALLS = {
   irs: {
-    phone: '+1 (202) 555-0143',
+    code: '+1',
+    phone: '(202) 555-0143',
     attestation: 'GATEWAY',
     transcript: 'This is Officer Davis from the Internal Revenue Service. There is an active arrest warrant issued in your name for tax fraud. Unless you resolve your balance of $2,450 immediately using Apple gift cards or Bitcoin, police will be dispatched.'
   },
   techsupport: {
-    phone: '+1 (800) 555-0188',
+    code: '+1',
+    phone: '(800) 555-0188',
     attestation: 'GATEWAY',
     transcript: 'Hello, this is Windows Security Support calling. Our system flagged malware broadcasting from your computer. Please download AnyDesk remote support software immediately so our technician can clean the virus.'
   },
   otp: {
-    phone: '+1 (888) 555-0199',
+    code: '+1',
+    phone: '(888) 555-0199',
     attestation: 'PARTIAL',
     transcript: 'BANK SECURITY: We detected an unauthorized transaction of $1,200. To block this transfer, read me the 6-digit one time password code we just sent to your phone.'
   },
   legit: {
-    phone: '+1 (415) 555-0122',
+    code: '+1',
+    phone: '(415) 555-0122',
     attestation: 'FULL',
     transcript: 'Hello, this is an automated reminder from City Medical Center confirming your appointment tomorrow at 10:00 AM. Press 1 to confirm or call back if you need to reschedule.'
   }
@@ -61,9 +66,24 @@ export function renderVishingScannerView(container, onScanComplete) {
       <div class="clean-card">
         <div style="margin-bottom: 14px;">
           <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px;">
-            PHONE NUMBER TO CHECK
+            CALLER PHONE NUMBER
           </label>
-          <input type="text" id="vishingPhoneInput" class="clean-input" value="+1 (202) 555-0143" placeholder="e.g. +1 555 123 4567">
+          <div style="display: flex; gap: 8px;">
+            <select id="vishingCountryCodeSelect" class="clean-input" style="width: 140px; cursor: pointer; flex-shrink: 0;">
+              <option value="+1" selected>🇺🇸 +1 (US/CA)</option>
+              <option value="+91">🇮🇳 +91 (IN)</option>
+              <option value="+44">🇬🇧 +44 (UK)</option>
+              <option value="+61">🇦🇺 +61 (AU)</option>
+              <option value="+49">🇩🇪 +49 (DE)</option>
+              <option value="+33">🇫🇷 +33 (FR)</option>
+              <option value="+971">🇦🇪 +971 (UAE)</option>
+              <option value="+65">🇸🇬 +65 (SG)</option>
+              <option value="CUSTOM">➕ Other (+XX)</option>
+              <option value="NONE">Direct / None</option>
+            </select>
+            <input type="text" id="vishingCustomCodeInput" class="clean-input" style="width: 75px; display: none; flex-shrink: 0;" placeholder="+XX">
+            <input type="text" id="vishingPhoneInput" class="clean-input" style="flex: 1;" placeholder="e.g. (202) 555-0143" value="(202) 555-0143">
+          </div>
         </div>
 
         <div style="margin-bottom: 14px;">
@@ -87,6 +107,37 @@ export function renderVishingScannerView(container, onScanComplete) {
         <button id="inspectVishingBtn" class="btn-primary-clean" style="width: 100%;">
           <i data-lucide="search"></i> Check Caller ID &amp; Risk Score
         </button>
+
+        <!-- Register / Whitelist Caller Identity Card (SRS [FR-VSH-03]) -->
+        <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border-light);">
+          <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" id="toggleWhitelistSection">
+            <span style="font-size: 0.8rem; font-weight: 600; color: var(--primary); display: flex; align-items: center; gap: 6px;">
+              <i data-lucide="user-check"></i> Register / Whitelist Caller
+            </span>
+            <i data-lucide="chevron-down" id="whitelistChevron" style="width: 14px; color: var(--text-muted);"></i>
+          </div>
+
+          <div id="whitelistForm" style="display: none; margin-top: 12px;">
+            <div style="margin-bottom: 8px;">
+              <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 4px;">PHONE NUMBER</label>
+              <input type="text" id="whitelistPhoneInput" class="clean-input" placeholder="+1 555 123 4567" style="font-size: 0.8rem; padding: 6px 10px;">
+            </div>
+            <div style="margin-bottom: 8px;">
+              <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 4px;">VERIFIED CONTACT NAME</label>
+              <input type="text" id="whitelistNameInput" class="clean-input" placeholder="e.g. My Bank / Doctor Office" style="font-size: 0.8rem; padding: 6px 10px;">
+            </div>
+            <div style="margin-bottom: 10px;">
+              <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 4px;">CARRIER / LINE</label>
+              <input type="text" id="whitelistCarrierInput" class="clean-input" placeholder="e.g. AT&amp;T / Mobile Cellular" style="font-size: 0.8rem; padding: 6px 10px;">
+            </div>
+            <button id="saveWhitelistBtn" class="btn-primary-clean" style="width: 100%; font-size: 0.78rem; padding: 6px 12px; justify-content: center;">
+              <i data-lucide="save"></i> Save Verified Caller
+            </button>
+            <div id="whitelistSuccessMsg" style="display: none; color: var(--green); font-size: 0.75rem; margin-top: 6px; text-align: center;">
+              Caller saved to local verified directory!
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Results Panel -->
@@ -96,11 +147,83 @@ export function renderVishingScannerView(container, onScanComplete) {
 
   if (window.lucide) window.lucide.createIcons();
 
+  const countryCodeSelect = container.querySelector('#vishingCountryCodeSelect');
+  const customCodeInput = container.querySelector('#vishingCustomCodeInput');
   const phoneInput = container.querySelector('#vishingPhoneInput');
   const attestationSelect = container.querySelector('#stirAttestationSelect');
   const transcriptInput = container.querySelector('#vishingTranscriptInput');
   const inspectBtn = container.querySelector('#inspectVishingBtn');
   const resultsContainer = container.querySelector('#vishingResultsContainer');
+
+  const toggleBtn = container.querySelector('#toggleWhitelistSection');
+  const whitelistForm = container.querySelector('#whitelistForm');
+  const chevron = container.querySelector('#whitelistChevron');
+  const saveBtn = container.querySelector('#saveWhitelistBtn');
+  const wlPhone = container.querySelector('#whitelistPhoneInput');
+  const wlName = container.querySelector('#whitelistNameInput');
+  const wlCarrier = container.querySelector('#whitelistCarrierInput');
+  const wlMsg = container.querySelector('#whitelistSuccessMsg');
+
+  // Handle Country Code dropdown change
+  countryCodeSelect.addEventListener('change', () => {
+    if (countryCodeSelect.value === 'CUSTOM') {
+      customCodeInput.style.display = 'block';
+      customCodeInput.focus();
+    } else {
+      customCodeInput.style.display = 'none';
+    }
+  });
+
+  function getFullPhoneNumber() {
+    const code = countryCodeSelect.value;
+    const custom = customCodeInput.value.trim();
+    const rawNumber = phoneInput.value.trim();
+
+    if (!rawNumber) return '';
+
+    if (rawNumber.startsWith('+')) {
+      return rawNumber;
+    }
+
+    if (code === 'NONE') {
+      return rawNumber;
+    }
+
+    if (code === 'CUSTOM') {
+      const prefix = custom.startsWith('+') ? custom : (custom ? `+${custom}` : '');
+      return prefix ? `${prefix} ${rawNumber}` : rawNumber;
+    }
+
+    return `${code} ${rawNumber}`;
+  }
+
+  if (toggleBtn && whitelistForm) {
+    toggleBtn.addEventListener('click', () => {
+      const isHidden = whitelistForm.style.display === 'none';
+      whitelistForm.style.display = isHidden ? 'block' : 'none';
+      chevron.setAttribute('data-lucide', isHidden ? 'chevron-up' : 'chevron-down');
+      if (window.lucide) window.lucide.createIcons();
+      if (isHidden) {
+        wlPhone.value = getFullPhoneNumber();
+      }
+    });
+
+    saveBtn.addEventListener('click', () => {
+      const p = wlPhone.value.trim();
+      const n = wlName.value.trim();
+      const c = wlCarrier.value.trim() || 'Mobile Cellular';
+      if (!p || !n) return;
+
+      saveCustomCallerIdentity(p, n, c);
+      wlMsg.style.display = 'block';
+      setTimeout(() => { if (wlMsg) wlMsg.style.display = 'none'; }, 2500);
+
+      const fullP = getFullPhoneNumber();
+      if (fullP.replace(/\D/g, '') === p.replace(/\D/g, '')) {
+        runVishingAnalysis();
+      }
+    });
+  }
 
   loadSample('irs');
 
@@ -113,6 +236,8 @@ export function renderVishingScannerView(container, onScanComplete) {
   function loadSample(type) {
     const s = SAMPLE_CALLS[type];
     if (s) {
+      countryCodeSelect.value = s.code;
+      customCodeInput.style.display = 'none';
       phoneInput.value = s.phone;
       attestationSelect.value = s.attestation;
       transcriptInput.value = s.transcript;
@@ -121,12 +246,18 @@ export function renderVishingScannerView(container, onScanComplete) {
   }
 
   function runVishingAnalysis() {
-    const phone = phoneInput.value;
+    const phone = getFullPhoneNumber();
     const attestation = attestationSelect.value;
     const transcript = transcriptInput.value;
 
     const res = analyzeVishingCall(phone, transcript, attestation);
-    if (onScanComplete) onScanComplete(res);
+    if (onScanComplete) {
+      onScanComplete({
+        ...res,
+        category: 'CALL',
+        target: `${phone} (${res.callerIntel?.name || 'Call'})`
+      });
+    }
 
     renderResults(res);
   }

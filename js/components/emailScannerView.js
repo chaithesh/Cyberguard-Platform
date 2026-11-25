@@ -1,6 +1,7 @@
 /**
  * Email Inspector View Component
  * Clean, simplified email phishing & header risk detector.
+ * Upgraded with: Display Name Spoofing checks, .eml drag-and-drop import, and extracted URLs breakdown.
  */
 
 import { analyzeEmail } from '../engine/emailAnalyzer.js';
@@ -13,6 +14,10 @@ const SAMPLE_EMAILS = {
   payroll: {
     header: `From: "HR Payroll Department" <hr-payroll@update-portal-payroll.top>\nReturn-Path: <hr-payroll@update-portal-payroll.top>\nSubject: Action Required: Confirm Your Payroll Direct Deposit Details\nAuthentication-Results: spf=softfail; dkim=pass; dmarc=fail`,
     body: `Dear Employee,\n\nYour account has been flagged for pending payroll update. Failure to confirm your identity within 24 hours will result in your salary payment being delayed.\n\nPlease click here to restore your direct deposit preferences: http://paypa1-security-verify.xyz/login.php\n\nAlso make sure to sign and return the attached verification sheet: invoice_payroll_update.docm\n\nHR Security Team`
+  },
+  vip: {
+    header: `From: "CEO Tim Cook <tcook@apple.com>" <tim.cook.exec99@gmail.com>\nReturn-Path: <tim.cook.exec99@gmail.com>\nSubject: Urgent Executive Favor - Need Apple Gift Cards\nAuthentication-Results: spf=pass; dkim=pass; dmarc=pass`,
+    body: `Hi,\n\nAre you at your desk right now? I am tied up in an all-day executive board meeting. I need a quick favor before end of day.\n\nPlease purchase 4 Apple gift cards ($100 each) and reply to this email with the codes immediately. I will reimburse you by tomorrow morning.\n\nRegards,\nTim Cook, CEO`
   },
   legit: {
     header: `From: "GitHub Security" <noreply@github.com>\nReturn-Path: <noreply@github.com>\nSubject: [GitHub] Security Advisory Notification\nAuthentication-Results: spf=pass; dkim=pass; dmarc=pass`,
@@ -27,7 +32,7 @@ export function renderEmailScannerView(container, onScanComplete) {
         <i data-lucide="mail"></i> Email Phishing Scanner
       </h2>
       <p class="view-subtitle">
-        Paste an email message and headers to instantly calculate its risk score and detect spoofing.
+        Inspect email messages and headers for sender spoofing, display name deception, urgency lures, and malicious attachments.
       </p>
     </div>
 
@@ -36,6 +41,9 @@ export function renderEmailScannerView(container, onScanComplete) {
       <span class="presets-label">TRY SAMPLE:</span>
       <button class="tab-pill sample-email-btn" data-type="bec">
         <i data-lucide="dollar-sign" style="width:13px; color:var(--red)"></i> Fake CEO Wire Scam
+      </button>
+      <button class="tab-pill sample-email-btn" data-type="vip">
+        <i data-lucide="user-x" style="width:13px; color:var(--red)"></i> VIP Display Name Spoof
       </button>
       <button class="tab-pill sample-email-btn" data-type="payroll">
         <i data-lucide="alert-circle" style="width:13px; color:var(--yellow)"></i> Payroll Spear Phish
@@ -48,16 +56,22 @@ export function renderEmailScannerView(container, onScanComplete) {
     <div class="scanner-split-container">
       <!-- Input Panel -->
       <div class="clean-card">
-        <div style="margin-bottom: 14px;">
-          <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">
             EMAIL MESSAGE BODY
           </label>
-          <textarea id="emailBodyInput" class="clean-textarea" style="height: 150px;" placeholder="Paste email content here..."></textarea>
+          <label class="tab-pill" style="cursor: pointer; font-size: 0.72rem; padding: 2px 8px; margin: 0; display: inline-flex; align-items: center; gap: 4px;">
+            <i data-lucide="upload" style="width: 12px; height: 12px;"></i> Import .eml File
+            <input type="file" id="emlFileInput" accept=".eml,.txt" style="display: none;">
+          </label>
+        </div>
+        <div style="margin-bottom: 14px;">
+          <textarea id="emailBodyInput" class="clean-textarea" style="height: 150px;" placeholder="Paste email message text here, or import a .eml file above..."></textarea>
         </div>
 
         <div style="margin-bottom: 16px;">
           <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px;">
-            OPTIONAL EMAIL HEADERS (From, Return-Path, SPF)
+            OPTIONAL EMAIL HEADERS (From, Return-Path, Authentication-Results)
           </label>
           <textarea id="emailHeaderInput" class="clean-textarea" style="height: 90px; font-size: 0.8rem;" placeholder="Paste email headers (optional)..."></textarea>
         </div>
@@ -78,6 +92,31 @@ export function renderEmailScannerView(container, onScanComplete) {
   const bodyInput = container.querySelector('#emailBodyInput');
   const inspectBtn = container.querySelector('#inspectEmailBtn');
   const resultsContainer = container.querySelector('#emailResultsContainer');
+  const emlFileInput = container.querySelector('#emlFileInput');
+
+  // Handle .eml file upload
+  if (emlFileInput) {
+    emlFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = event.target.result;
+        // Split headers from body at first double newline
+        const splitMatch = content.match(/\r?\n\r?\n/);
+        if (splitMatch) {
+          const splitIdx = splitMatch.index;
+          headerInput.value = content.substring(0, splitIdx).trim();
+          bodyInput.value = content.substring(splitIdx + splitMatch[0].length).trim();
+        } else {
+          bodyInput.value = content;
+        }
+        runEmailAnalysis();
+      };
+      reader.readAsText(file);
+    });
+  }
 
   // Load initial sample
   loadSample('bec');
@@ -104,7 +143,13 @@ export function renderEmailScannerView(container, onScanComplete) {
     const bodyText = bodyInput.value;
 
     const res = analyzeEmail(bodyText, headerText);
-    if (onScanComplete) onScanComplete(res);
+    if (onScanComplete) {
+      onScanComplete({
+        ...res,
+        category: 'EMAIL',
+        target: res.subject || res.fromEmail || 'Email Scan'
+      });
+    }
 
     renderResults(res);
   }
@@ -128,7 +173,7 @@ export function renderEmailScannerView(container, onScanComplete) {
               </span>
             </div>
             <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 8px;">
-              Sender: <strong style="color: #fff;">${res.fromEmail || 'Unknown'}</strong>
+              Sender: <strong style="color: #fff;">${res.displayName ? `${res.displayName} &lt;${res.fromEmail}&gt;` : (res.fromEmail || 'Unknown')}</strong>
             </div>
           </div>
 
@@ -172,6 +217,27 @@ export function renderEmailScannerView(container, onScanComplete) {
             `).join('')}
           </div>
         </div>
+
+        <!-- Extracted URLs Breakdown Card -->
+        ${res.links && res.links.length > 0 ? `
+          <div class="clean-card">
+            <h4 class="card-heading" style="font-size: 0.9rem;">
+              <i data-lucide="link" style="color: var(--primary);"></i> Embedded URLs Inspected (${res.links.length})
+            </h4>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              ${res.links.map(l => `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; border: 1px solid var(--border-light);">
+                  <span style="font-family: var(--font-mono); color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px;" title="${l.hostname}">
+                    ${l.hostname}
+                  </span>
+                  <span class="risk-badge ${l.riskLevel.toLowerCase()}" style="font-size: 0.72rem; padding: 2px 8px;">
+                    ${l.riskLevel} (${l.score})
+                  </span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
 
       </div>
     `;

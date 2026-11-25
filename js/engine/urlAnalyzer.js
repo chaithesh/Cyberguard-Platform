@@ -12,6 +12,38 @@ const TARGET_BRANDS = [
   'github', 'dhl', 'fedex', 'usps', 'ups', 'walmart', 'ebay', 'steam'
 ];
 
+// Authorized official TLDs for protected enterprise brands
+const BRAND_AUTHORIZED_TLDS = {
+  github: ['com', 'io', 'blog'],
+  paypal: ['com', 'me'],
+  apple: ['com'],
+  netflix: ['com'],
+  amazon: ['com'],
+  google: ['com', 'org', 'net', 'dev'],
+  microsoft: ['com', 'net'],
+  facebook: ['com'],
+  instagram: ['com'],
+  linkedin: ['com'],
+  twitter: ['com'],
+  chase: ['com'],
+  bankofamerica: ['com'],
+  wellsfargo: ['com'],
+  binance: ['com', 'us'],
+  coinbase: ['com'],
+  metamask: ['io'],
+  dropbox: ['com'],
+  docusign: ['com', 'net'],
+  adobe: ['com'],
+  stripe: ['com'],
+  dhl: ['com', 'de'],
+  fedex: ['com'],
+  usps: ['com'],
+  ups: ['com'],
+  walmart: ['com'],
+  ebay: ['com'],
+  steam: ['com']
+};
+
 // High risk Top Level Domains (TLDs) frequently abused in phishing
 const HIGH_RISK_TLDS = [
   'xyz', 'top', 'tk', 'ml', 'ga', 'cf', 'gq', 'work', 'click', 'link',
@@ -155,7 +187,22 @@ export function analyzeUrl(rawUrl) {
   const mainDomain = domainParts.length >= 2 ? domainParts[domainParts.length - 2] : hostname;
 
   for (const brand of TARGET_BRANDS) {
-    if (mainDomain === brand) continue; // Exact legitimate brand name
+    // Check if exact brand name is being used on an unauthorized TLD
+    if (mainDomain === brand) {
+      const allowedTlds = BRAND_AUTHORIZED_TLDS[brand] || ['com'];
+      if (!allowedTlds.includes(tld)) {
+        spoofedBrand = brand;
+        threatScore += 55;
+        flags.push({
+          type: 'FAIL',
+          title: `Unauthorized Brand Domain (${brand.toUpperCase()})`,
+          desc: `Domain '${mainDomain}.${tld}' uses protected brand name '${brand}', but official ${brand} portals only operate on: .${allowedTlds.join(', .')}. This domain is an unauthorized clone or spoofing lure.`,
+          weight: 55
+        });
+        break;
+      }
+      continue; // Exact legitimate brand name on authorized TLD (e.g. github.com, github.io)
+    }
 
     // Check Levenshtein distance
     const dist = levenshteinDistance(mainDomain, brand);
@@ -222,22 +269,17 @@ export function analyzeUrl(rawUrl) {
     });
   }
 
-  // Normalize score between 0 and 100
-  const finalScore = Math.min(100, Math.max(0, threatScore));
-
-  let riskLevel = 'SAFE';
-  if (finalScore >= 70) riskLevel = 'DANGER';
-  else if (finalScore >= 35) riskLevel = 'WARNING';
-
   // Simulated WHOIS & SSL Details
+  const isSuspicious = threatScore >= 35;
   const simulatedWhois = {
-    domainAgeDays: finalScore > 50 ? Math.floor(Math.random() * 14) + 1 : Math.floor(Math.random() * 2000) + 300,
-    sslIssuer: finalScore > 50 ? "Let's Encrypt (Automated/Free)" : "DigiCert Global Root CA",
+    domainAgeDays: isSuspicious ? Math.floor(Math.random() * 14) + 1 : Math.floor(Math.random() * 2000) + 300,
+    sslIssuer: isSuspicious ? "Let's Encrypt (Automated/Free)" : "DigiCert Global Root CA",
     sslValid: urlObj.protocol === 'https:',
-    registrar: finalScore > 50 ? "NameCheap / Dynadot (Anonymous)" : "MarkMonitor Inc."
+    registrar: isSuspicious ? "NameCheap / Dynadot (Anonymous)" : "MarkMonitor Inc."
   };
 
   if (simulatedWhois.domainAgeDays < 15) {
+    threatScore += 15;
     flags.push({
       type: 'WARN',
       title: 'Newly Registered Domain (NRD)',
@@ -245,6 +287,13 @@ export function analyzeUrl(rawUrl) {
       weight: 15
     });
   }
+
+  // Normalize score between 0 and 100
+  const finalScore = Math.min(100, Math.max(0, threatScore));
+
+  let riskLevel = 'SAFE';
+  if (finalScore >= 70) riskLevel = 'DANGER';
+  else if (finalScore >= 35) riskLevel = 'WARNING';
 
   return {
     rawUrl,
